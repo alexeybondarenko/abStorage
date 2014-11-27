@@ -1,0 +1,25 @@
+{
+  "name": "bank/storage",
+  "main": "storage.js",
+  "version": "0.1.2",
+  "authors": [
+    "Alexey Bondarenko <alexeybondarenko@me.com>"
+  ],
+  "description": "Storage module",
+  "keywords": [
+    "storage",
+    "localstorage"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "ngstorage": "0.3.0"
+  }
+}
