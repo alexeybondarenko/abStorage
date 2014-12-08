@@ -1,7 +1,7 @@
 {
   "name": "bank/storage",
   "main": "storage.js",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "authors": [
     "Alexey Bondarenko <alexeybondarenko@me.com>"
   ],

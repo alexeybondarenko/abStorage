@@ -26,12 +26,12 @@ function $storage ($localStorage, $q, $timeout) {
      * @param data - new item to the storage
      */
     Storage.prototype.push = function(data) {
-        var arr = this.load(); //Loading data from the storage
-
-        arr.push(data); // Pushing new data to array
-        this.saveAs(arr); // Saving data to the storage
-
-        return this.load(); // Return new data of the storage
+        var self = this;
+        return this.load().then(function(arr) { //Loading data from the storage
+            return arr.push(data);// Pushing new data to array
+        }).then(function(newArr) {
+            return self.saveAs(newArr);// Saving data to the storage
+        });
     };
     Storage.prototype.deleteItem = function(item) {
         var arr = this.load(),
@@ -54,22 +54,21 @@ function $storage ($localStorage, $q, $timeout) {
      * @returns {$q.promise}
      */
     Storage.prototype.getById = function (itemId, itemIdName, multiple, model) {
-        var defer = $q.defer(), // Init defer obj
-            data = this.load(); //Loading data from the storage
+        var defer = $q.defer(); // Init defer obj
 
         itemIdName = itemIdName || 'id'; // Default value of the itemName argument
         multiple = multiple || false; //Default value of the multiple argument
 
-        $timeout(function(){
-            // Undefined item id verifying
-            if (typeof itemId === 'undefined') {
-                return defer.reject({
-                    errorText: 'Undefined itemID'
-                });
-            }
+        if (typeof itemId === 'undefined') {
+            return defer.promise.reject({
+                errorText: 'Undefined itemID'
+            });
+        }
+
+        return this.load().then(function(data) {
             // Empty data array for change verifying
             if (data.length === 0) {
-                return defer.reject({
+                return $q.reject({
                     errorText: 'Empty data array'
                 });
             }
@@ -79,7 +78,7 @@ function $storage ($localStorage, $q, $timeout) {
             });
             // Item with filter if was not found
             if (filtered.length === 0) {
-                return defer.reject({
+                return $q.reject({
                     errorText: 'Not found data'
                 });
             }
@@ -87,7 +86,6 @@ function $storage ($localStorage, $q, $timeout) {
             var result = (multiple) ? filtered : filtered[0];
             // Transformation into the model object
             if (typeof model !== 'undefined') {
-
                 if (Array.isArray(result)) {
                     var res = [];
                     angular.forEach(result,function(item) {
@@ -98,11 +96,8 @@ function $storage ($localStorage, $q, $timeout) {
                     result = new model(result);
                 }
             }
-
-            defer.resolve(result);
+            return result;
         });
-
-        return defer.promise;
     };
     /**
      * Setting item in the storage by itemID. Searching updating object for itemID is making by itemIDName property.
@@ -112,22 +107,19 @@ function $storage ($localStorage, $q, $timeout) {
      * @returns {$q.promise}
      */
     Storage.prototype.setById = function (itemId, item, itemIdName) {
-        var defer = $q.defer(),
-            _this = this;
-
+        var defer = $q.defer();
         itemIdName = itemIdName || 'id'; // Default value of the itemName
-        var data = this.load(); // Loading data from storage
 
-        $timeout(function(){
-            // Undefined item id verifying
-            if (typeof itemId === 'undefined') {
-                return defer.reject({
-                    errorText: 'Undefined itemID'
-                });
-            }
+        if (typeof itemId === 'undefined') {
+            return defer.promise.reject({
+                errorText: 'Undefined itemID'
+            });
+        }
+        var self = this;
+        return this.load().then(function(data) {
             // Empty data array for change verifying
             if (data.length === 0) {
-                return defer.reject({
+                return $q.reject({
                     errorText: 'Empty data array'
                 });
             }
@@ -138,45 +130,58 @@ function $storage ($localStorage, $q, $timeout) {
                     break;
                 }
             }
-            _this.saveAs(data); // Saving the data in storage
-            defer.resolve(data); // Returning new array on promise
+            return self.saveAs(data);
         });
-        return defer.promise;
     };
     /**
      * Loading data from the storage
      * @returns {Array}
      */
     Storage.prototype.load = function () {
-        var arr = $localStorage[this.name]; //Getting data from the localstorage
-        if (arr === null) { // Catch default NULL value
-            arr = [];
-        }
-        if (!Array.isArray(arr)) { // Catch obj value of the storage array
-            arr = [arr];
-        }
 
-        this.data = arr;
-        return this.data;
+        var defer = $q.defer();
+        var self = this;
+        setTimeout(function() {
+            var arr;
+            arr = $localStorage[self.name]; //Getting data from the localstorage
+            if (arr === null) { // Catch default NULL value
+                arr = [];
+            }
+            if (!Array.isArray(arr)) { // Catch obj value of the storage array
+                arr = [arr];
+            }
+            defer.resolve(arr);
+        },0);
+
+        return defer.promise.then(function (arr) {
+            self.data = arr;
+            return self.data;
+        });
     };
     /**
      * Saving data to the storage
      * @param data
      */
     Storage.prototype.saveAs = function (data) {
-        $localStorage[this.name] = data;
+        var self = this;
+        var defer = $q.defer();
+        setTimeout(function () {
+            $localStorage[self.name] = data;
+            defer.resolve(data);
+        },0);
+        return defer.promise;
     };
     /**
      * Saving current data of the storage to the localStorage
      */
     Storage.prototype.save = function () {
-        $localStorage[this.name] = this.data;
+        return this.saveAs(this.data);
     };
     /**
      * Resetting localStorage
      */
     Storage.prototype.reset = function () {
-        $localStorage[this.name] = null;
+        return this.saveAs(null)
     };
 
     return Storage;
